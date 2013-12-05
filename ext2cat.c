@@ -41,6 +41,17 @@ int main(int argc, char ** argv) {
         memcpy(buf + bytes_read, block, bytes_to_read);
         bytes_read += bytes_to_read;
     }
+    
+    __u32* indirect_block = (__u32*)get_block(fs, target_ino->i_block[EXT2_IND_BLOCK]);
+    for(__u32 i = 0; i < block_size / 4; ++i)
+    {
+      bytes_left = size - bytes_read;
+      if(bytes_left == 0) break;
+      __u32 bytes_to_read = bytes_left > block_size ? block_size : bytes_left;
+      void* block = get_block(fs, indirect_block[i]);
+      memcpy(buf + bytes_read, block, bytes_to_read);
+      bytes_read += bytes_to_read;
+    }
 
     write(1, buf, bytes_read);
     if (bytes_read < size) {
