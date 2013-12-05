@@ -1,5 +1,5 @@
 # handin info
-TEAM=`whoami`
+TEAM=djl605+ilo799
 VERSION=`date +%Y%m%d%H%M%S`
 PROJ=ext2cat
 
