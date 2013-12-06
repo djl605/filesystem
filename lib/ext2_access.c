@@ -1,11 +1,6 @@
 // ext2 definitions from the real driver in the Linux kernel.
 #include "ext2fs.h"
 
-// This header allows your project to link against the reference library. If you
-// complete the entire project, you should be able to remove this directive and
-// still compile your code.
-#include "reference_implementation.h"
-
 // Definitions for ext2cat to compile against.
 #include "ext2_access.h"
 
