@@ -126,7 +126,7 @@ __u32 get_inode_from_dir(void * fs, struct ext2_inode * dir,
     {
       __u16 rec_len = directory->rec_len;
       seen_size += rec_len;
-      if(seen_size > directory_size)
+      if(seen_size >= directory_size)
         return 0;
       directory = (struct ext2_dir_entry_2*)((size_t)directory + rec_len);
     }
