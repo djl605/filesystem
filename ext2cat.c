@@ -43,7 +43,7 @@ int main(int argc, char ** argv) {
     }
     
     __u32* indirect_block = (__u32*)get_block(fs, target_ino->i_block[EXT2_IND_BLOCK]);
-    for(__u32 i = 0; i < block_size / 4; ++i)
+    for(__u32 i = 0; i < block_size / sizeof(__u32); ++i)
     {
       bytes_left = size - bytes_read;
       if(bytes_left == 0) break;
