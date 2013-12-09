@@ -1,0 +1,87 @@
+.\" Process this file with
+.\" groff -man -Tascii tsh.1
+.\"
+.TH Filesystem  1  "DECEMBER 2013" Linux "User Manuals"
+.SH NAME
+  ext2cat [arg1] [arg2] -Extracts the file given in arg2 from the filesystem img given in arg1. Prints the contents of arg2 to the screen.
+
+ ext2_access.c- The driver for the ext2 file system. 
+
+.SH Introduction
+
+For this project we were given an ext2 filesystem image: eecs343.img which models an actual linux ext2 files system. It has directories and files. 
+
+We were also given a program ext2cat which extracts a given file from eecs343,img and prints it to the scree. 
+
+Our task is to implement lib/ext2access.c which is the driver that ext2cat will use to interface with the filesystem. This file includes the header ext2fs.h which provides definitions and macros from the Linux implementation of ext2. 
+
+.SH Design
+
+Function 1: get_super_block 
+
+This function returns a ptr to the primary superblock of the filesystem. It is necessary to access the super block in order to mount the file system.
+ 
+Implementation:
+
+The primary copy of the superblock is stored at an offset of 1024 bytes from the start of the filesystem so we simply add SUPERBLOCK_OFFSET to the ptr to the start of the file system and type cast this address as a ptr to a ext2_super_block struct. 
+
+Function 2: get_block_size
+
+This function returns the block size for the file system (all blocks are equal size).
+
+Implementation: 
+
+This parameter is a member of the ext2_super_block structure (actually the log of block size is stored to save space- s_log_block_size) and can be accessed by calling the macro EXT2_BLOCK_SIZE on a ptr to the super block structure.   
+
+Function 3: get_block
+
+This function returns a pointer to a block given its number
+
+Implementation:
+
+Since each block in the file system is the same size, we can find the n-th block by adding n*block_size to the starting address of the file system. 
+
+Function 4: get_block_group
+
+This function returns a pointer to the first block group descriptor in a file system based on the block_group_num. A real file system will have many of these but we assume there is only one after the first copy of the super block. 
+
+Implementation:
+
+The block group descriptor table is an array of block group descriptors, used to define parameters of all the block groups. The first instance of the block group descriptor table is always block 2 of the file system (after the super block).
+The first block group descriptor will be at the start of the table. 
+ 
+Function 5: get_inode
+
+This function returns a pointer to an inode given its inode number. Since inodes are stored at the beginning of every block group, in a real file system this would require finding the correct block group, but here we can assume it's in the first one. 
+
+Implementation:
+
+First we call get_block_group(fs,1) to access the block group desciptor for the first block. Then we access the parameter bg_inode_table which is a pointer to the first inode of the inode table for the corresponding block group. We index into the table by adding (inode_num-1)*sizeof(struct ext2_inode) to the starting address of the table, where ext2_inode is a table entry. Note that inodes index starting at 1 rather than 0 so we need to subrtact 1 from inode_num.
+
+Function 6: get_inode_from_dir
+
+This function searches a given directory for a given filename and returns that file's inode number if the file exists in the directory. It returns 0 otherwise.
+
+Implementation:
+
+A directory is implemented as a file that contains in its data blocks a linked list of directory entries. Directory entries represent the files stored in a directory. A directory entry data structure contains the name of the entry, the inode number associated with the data of this entry, and the distance within the directory file to the next entry (same as a ptr to the next entry). 
+
+We are given the i_node corresponding to the directory. First we access the first data block which this inode points to. We get the block number  which is given in the i_block array at i_block[0]. Then we call get_block on this number to access the first block. Inside the block we iterate through directory entries and check to see if their file name matches the file we are searching for. Once we find a match, we stop searching and return the inode # of that file's directory entry. If we manage to search through the entire directory file without finding a match, then we return 0.
+
+Function 7: get_inode_by_path
+
+This function finds a file's inode number by its path.
+
+Implementation:
+
+We use the function split_path (which is given to us) to parse the full file path into an array of strings for each directory in the path. However we still need to determine the length of the array. In order to do this we count the number of slashes in the path. We now know all the files in the path and we can iterate through them until we find our desired file. 
+
+We start at the root directory. From here we search for the first file/directory in the path which is given by path_parts[i]. We do so by calling get_inode_from_dir. If we are not able to find the file then we retun 0. Once we find the file's inode # we can return it if we are at the end of the path. If we are not at the end of the path, the file is a directory and we must search that directory with the next string in path_parts. 
+
+Extra Credit:
+ext2cat.c as given to us reads the file one block at a time for all the directly mapped blocks in the file. However the function does not handle indirect blocks. We added code to handle indirect blocks (just one-level however, not doubly or triply indirect blocks).
+
+The code is simple. We first iterate through all the direct blocks in the inode. We then access the entry at i_block[EXT2_IND_BLOCK]. EXT2_IND_BLOCK is the index of i_block where the first indirect block is stored (IT's 12, since there are 12 direct blocks.) We then access that indirect block by calling get_block on its block number. Once we have accessed the block, we iterate through all the blocks pointed to in the 2nd-level block table just as we did for the first 12 direct blocks. 
+
+.SH Authors
+Daniel Lieberman and Isabelle Orrico
